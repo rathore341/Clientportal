@@ -75,6 +75,24 @@ class Admin(db.Model):
         return check_password_hash(self.password, raw_password)
 
 
+def bootstrap_admin_from_env():
+    email = os.environ.get("BOOTSTRAP_ADMIN_EMAIL", "").strip().lower()
+    password = os.environ.get("BOOTSTRAP_ADMIN_PASSWORD", "")
+    name = os.environ.get("BOOTSTRAP_ADMIN_NAME", "Portal Admin").strip() or "Portal Admin"
+
+    if not email or not password:
+        return
+
+    admin = Admin.query.filter_by(email=email).first()
+    if admin:
+        return
+
+    admin = Admin(name=name, email=email)
+    admin.set_password(password)
+    db.session.add(admin)
+    db.session.commit()
+
+
 class Sales(db.Model):
     __tablename__ = "sales"
 
@@ -701,6 +719,8 @@ def create_app():
 
     with app.app_context():
         db.create_all()
+        init_upload_database()
+        bootstrap_admin_from_env()
         client_columns = {column["name"] for column in inspect(db.engine).get_columns("clients")}
         if "sharepoint_folder_path" not in client_columns:
             with db.engine.begin() as connection:
