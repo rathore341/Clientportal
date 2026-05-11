@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}Documents | Client Portal{% endblock %}
+
+{% block styles %}
+  <style>
+    .documents-shell {
+      min-height: calc(100vh - 57px);
+    }
+
+    .sidebar {
+      min-height: calc(100vh - 57px);
+    }
+
+    .sidebar .nav-link {
+      color: #495057;
+      border-radius: .5rem;
+      font-weight: 500;
+    }
+
+    .sidebar .nav-link.active,
+    .sidebar .nav-link:hover {
+      color: #0d6efd;
+      background: #eaf2ff;
+    }
+
+    .document-access-panel {
+      max-width: 760px;
+    }
+  </style>
+{% endblock %}
+
+{% block main_class %}container-fluid p-0{% endblock %}
+
+{% block content %}
+  <div class="documents-shell row g-0">
+    <aside class="sidebar col-12 col-lg-2 bg-white border-end p-3">
+      <div class="d-flex flex-lg-column gap-2">
+        <a class="nav-link px-3 py-2" href="{{ url_for('dashboard') }}">Dashboard</a>
+        <a class="nav-link px-3 py-2" href="{{ url_for('sales_details') }}">Sales Invoices</a>
+        <a class="nav-link px-3 py-2" href="{{ url_for('sales_analysis') }}">Sales Analysis</a>
+        <a class="nav-link active px-3 py-2" href="{{ url_for('documents') }}">Documents</a>
+        <a class="nav-link px-3 py-2" href="{{ url_for('logout') }}">Logout</a>
+      </div>
+    </aside>
+
+    <section class="col-12 col-lg-10 p-4 p-xl-5">
+      <div class="mb-4">
+        <p class="text-muted mb-1">Client documents</p>
+        <h1 class="h3 mb-0">{{ current_user.company_name }}</h1>
+      </div>
+
+      <div class="card border-0 shadow-sm document-access-panel">
+        <div class="card-body p-4">
+          <h2 class="h5 mb-2">SharePoint documents</h2>
+          <p class="text-muted mb-4">
+            Documents open directly in SharePoint, where Microsoft verifies your access before showing any file.
+          </p>
+
+          {% if configured %}
+            <a class="btn btn-primary" href="{{ url_for('open_documents') }}" target="_blank" rel="noopener">
+              Open Documents
+            </a>
+          {% else %}
+            <button class="btn btn-secondary" type="button" disabled>Documents Not Mapped</button>
+          {% endif %}
+        </div>
+      </div>
+    </section>
+  </div>
+{% endblock %}

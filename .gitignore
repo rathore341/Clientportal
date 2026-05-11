@@ -1,0 +1,46 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.Python
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# Flask and local runtime data
+instance/
+*.sqlite3
+*.sqlite3-*
+*.db
+db_backups/
+flask_*.log
+*.log
+
+# Local verification and temporary files
+_verifycache/
+tmp*/
+_verify_*.sqlite3
+
+# Secrets and environment
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Confidential uploads and exported working files
+*.xls
+*.xlsx
+*.csv
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

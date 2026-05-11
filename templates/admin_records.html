@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}Uploaded Records | Admin Panel{% endblock %}
+
+{% block content %}
+  <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+    <div>
+      <p class="text-muted mb-1">Admin panel</p>
+      <h1 class="h3 mb-0">Uploaded records</h1>
+    </div>
+    <a class="btn btn-outline-secondary" href="{{ url_for('admin.dashboard') }}">Admin home</a>
+  </div>
+
+  {% if selected_upload_type == "sales" and selected_client_id %}
+    <div class="mb-4">
+      <a class="btn btn-outline-primary" href="{{ url_for('admin.sales_details', client_id=selected_client_id) }}">Manage sales invoices</a>
+    </div>
+  {% endif %}
+
+  <form class="card border-0 shadow-sm mb-4" method="get">
+    <div class="card-body row g-3 align-items-end">
+      <div class="col-12 col-md-5">
+        <label class="form-label" for="type">Data Type</label>
+        <select class="form-select" id="type" name="type">
+          {% for upload_type, schema in upload_schemas.items() %}
+            <option value="{{ upload_type }}" {% if upload_type == selected_upload_type %}selected{% endif %}>{{ schema.label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-12 col-md-5">
+        <label class="form-label" for="client_id">Client</label>
+        <select class="form-select" id="client_id" name="client_id">
+          <option value="">All clients</option>
+          {% for client in clients %}
+            <option value="{{ client.id }}" {% if client.id == selected_client_id %}selected{% endif %}>{{ client.company_name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-12 col-md-2">
+        <button class="btn btn-primary w-100" type="submit">Filter</button>
+      </div>
+    </div>
+  </form>
+
+  <div class="card border-0 shadow-sm">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            {% for column in columns %}
+              <th>{{ column.replace("_", " ").title() }}</th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for record in records %}
+            <tr>
+              {% for column in columns %}
+                <td>{{ record[column] }}</td>
+              {% endfor %}
+            </tr>
+          {% else %}
+            <tr>
+              <td class="text-center text-muted py-4" colspan="{{ columns | length }}">No uploaded records found.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock %}

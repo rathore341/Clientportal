@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Panel | Client Portal{% endblock %}
+
+{% block content %}
+  <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+    <div>
+      <p class="text-muted mb-1">Admin panel</p>
+      <h1 class="h3 mb-0">Portal management</h1>
+    </div>
+    <a class="btn btn-outline-secondary" href="{{ url_for('admin_logout') }}">Logout</a>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-12 col-md-4">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <p class="text-muted mb-1">Clients</p>
+          <h2 class="h3 mb-0">{{ clients_count }}</h2>
+        </div>
+      </div>
+    </div>
+
+    {% for upload_type, schema in upload_schemas.items() %}
+      <div class="col-12 col-md-4 col-xl-2">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-body">
+            <p class="text-muted mb-1">{{ schema.label }}</p>
+            <h2 class="h3 mb-0">{{ records_count[upload_type] }}</h2>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+
+  <div class="row g-4">
+    <div class="col-12 col-lg-4">
+      <a class="card border-0 shadow-sm h-100 text-decoration-none text-body" href="{{ url_for('admin.clients') }}">
+        <div class="card-body p-4">
+          <h2 class="h5">Manage client accounts</h2>
+          <p class="text-muted mb-0">Create, edit, and delete client logins.</p>
+        </div>
+      </a>
+    </div>
+    <div class="col-12 col-lg-4">
+      <a class="card border-0 shadow-sm h-100 text-decoration-none text-body" href="{{ url_for('excel_upload.upload_excel') }}">
+        <div class="card-body p-4">
+          <h2 class="h5">Upload Excel data</h2>
+          <p class="text-muted mb-0">Upload Sales, Purchase, Debtors, and Profit/Loss sheets.</p>
+        </div>
+      </a>
+    </div>
+    <div class="col-12 col-lg-4">
+      <a class="card border-0 shadow-sm h-100 text-decoration-none text-body" href="{{ url_for('admin.records') }}">
+        <div class="card-body p-4">
+          <h2 class="h5">View uploaded records</h2>
+          <p class="text-muted mb-0">Inspect uploaded rows by client and data type.</p>
+        </div>
+      </a>
+    </div>
+  </div>
+{% endblock %}

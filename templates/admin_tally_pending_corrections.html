@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}Tally Pending Corrections | Client Portal{% endblock %}
+
+{% block content %}
+  <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+    <div>
+      <p class="text-muted mb-1">Admin</p>
+      <h1 class="h3 mb-0">Tally pending corrections</h1>
+      <p class="text-muted mb-0">Rows saved during partial import because they had validation errors or mismatches.</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a class="btn btn-outline-secondary" href="{{ url_for('excel_upload.upload_excel') }}">Back to uploads</a>
+      <a class="btn btn-outline-primary" href="{{ url_for('admin.tally_sync_history') }}">Tally history</a>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+      <h2 class="h5 mb-0">Saved mismatch rows</h2>
+      <span class="badge text-bg-light">{{ corrections | length }} records</span>
+    </div>
+
+    {% if corrections %}
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Saved At</th>
+              <th>Client</th>
+              <th>Month</th>
+              <th>Invoice No.</th>
+              <th>Name</th>
+              <th>Date</th>
+              <th>Amounts</th>
+              <th>Issues</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for correction in corrections %}
+              <tr>
+                <td>{{ correction.created_at }}</td>
+                <td>{{ correction.client_name }}</td>
+                <td>{{ correction.month }}</td>
+                <td>{{ correction.invoice_no or "-" }}</td>
+                <td>{{ correction.party_name or "-" }}</td>
+                <td>{{ correction.invoice_date or "-" }}</td>
+                <td class="small text-nowrap">
+                  Sale: {{ correction.row_data.get("sale", 0) }}<br>
+                  CGST: {{ correction.row_data.get("cgst", 0) }} |
+                  SGST: {{ correction.row_data.get("sgst", 0) }} |
+                  IGST: {{ correction.row_data.get("igst", 0) }}<br>
+                  Round Off: {{ correction.row_data.get("round_off", 0) }}<br>
+                  Invoice: {{ correction.row_data.get("gross_total", 0) }}
+                </td>
+                <td>
+                  <ul class="mb-0 ps-3">
+                    {% for error in correction.errors %}
+                      <li>{{ error }}</li>
+                    {% endfor %}
+                  </ul>
+                </td>
+                <td><span class="badge text-bg-warning">{{ correction.status }}</span></td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="card-body text-center text-muted py-5">
+        No pending Tally correction rows yet.
+      </div>
+    {% endif %}
+  </div>
+{% endblock %}

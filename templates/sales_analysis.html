@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+
+{% block title %}Sales Analysis | Client Portal{% endblock %}
+
+{% block content %}
+  <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+    <div>
+      <p class="text-muted mb-1">Sales analysis</p>
+      <h1 class="h3 mb-0">{{ current_user.company_name }}</h1>
+    </div>
+
+    <div class="d-flex flex-column flex-sm-row gap-2">
+      <form method="get" class="d-flex align-items-center gap-2">
+        <label class="form-label mb-0 fw-semibold" for="month">Month</label>
+        <select class="form-select" id="month" name="month" onchange="this.form.submit()">
+          {% for month in months %}
+            <option value="{{ month }}" {% if month == selected_month %}selected{% endif %}>{{ month }}</option>
+          {% endfor %}
+        </select>
+      </form>
+      <a class="btn btn-outline-secondary" href="{{ url_for('dashboard', month=selected_month) }}">Back to dashboard</a>
+      <a class="btn btn-outline-primary" href="{{ url_for('sales_details', month=selected_month) }}">View invoices</a>
+    </div>
+  </div>
+
+  <div class="alert alert-primary border-0 shadow-sm">
+    {{ analysis.insight_summary }}
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-12 col-md-6 col-xl-3">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <p class="text-muted mb-1">Current Sales</p>
+          <h2 class="h4 mb-1">{{ "Rs. {:,.0f}".format(analysis.current.total_sales) }}</h2>
+          <p class="small mb-0 {% if analysis.sales_change >= 0 %}text-success{% else %}text-danger{% endif %}">
+            {{ "Rs. {:,.0f}".format(analysis.sales_change) }} vs {{ analysis.previous_month }}
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-md-6 col-xl-3">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <p class="text-muted mb-1">Sales Change</p>
+          <h2 class="h4 mb-1">
+            {% if analysis.sales_change_percent is none %}
+              N/A
+            {% else %}
+              {{ "{:.1f}%".format(analysis.sales_change_percent) }}
+            {% endif %}
+          </h2>
+          <p class="small text-muted mb-0">{{ analysis.month }} vs {{ analysis.previous_month }}</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-md-6 col-xl-3">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <p class="text-muted mb-1">Invoice Count</p>
+          <h2 class="h4 mb-1">{{ analysis.current.invoice_count }}</h2>
+          <p class="small mb-0 {% if analysis.invoice_count_change >= 0 %}text-success{% else %}text-danger{% endif %}">
+            {{ analysis.invoice_count_change }} vs {{ analysis.previous.invoice_count }}
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-md-6 col-xl-3">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <p class="text-muted mb-1">Avg Invoice Value</p>
+          <h2 class="h4 mb-1">{{ "Rs. {:,.0f}".format(analysis.current.average_invoice_value) }}</h2>
+          <p class="small mb-0 {% if analysis.average_invoice_change >= 0 %}text-success{% else %}text-danger{% endif %}">
+            {{ "Rs. {:,.0f}".format(analysis.average_invoice_change) }} vs {{ analysis.previous_month }}
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-12 col-xl-7">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-white">
+          <h2 class="h5 mb-0">Top 5 customers</h2>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Customer</th>
+                <th class="text-end">Sales</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for customer in analysis.current.top_customers %}
+                <tr>
+                  <td>{{ customer.name }}</td>
+                  <td class="text-end fw-semibold">{{ "Rs. {:,.0f}".format(customer.amount) }}</td>
+                </tr>
+              {% else %}
+                <tr>
+                  <td class="text-center text-muted py-4" colspan="2">No customer sales found for {{ selected_month }}.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-xl-5">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-white">
+          <h2 class="h5 mb-0">Tax totals</h2>
+        </div>
+        <div class="card-body">
+          <div class="d-flex justify-content-between border-bottom py-2">
+            <span>CGST</span>
+            <strong>{{ "Rs. {:,.0f}".format(analysis.current.total_cgst) }}</strong>
+          </div>
+          <div class="d-flex justify-content-between border-bottom py-2">
+            <span>SGST</span>
+            <strong>{{ "Rs. {:,.0f}".format(analysis.current.total_sgst) }}</strong>
+          </div>
+          <div class="d-flex justify-content-between border-bottom py-2">
+            <span>IGST</span>
+            <strong>{{ "Rs. {:,.0f}".format(analysis.current.total_igst) }}</strong>
+          </div>
+          <div class="d-flex justify-content-between border-bottom py-2">
+            <span>Round Off</span>
+            <strong>{{ "Rs. {:,.0f}".format(analysis.current.total_round_off) }}</strong>
+          </div>
+          <div class="d-flex justify-content-between py-2">
+            <span>Total Tax</span>
+            <strong>{{ "Rs. {:,.0f}".format(analysis.current.total_tax) }}</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}{{ "Edit" if client else "Create" }} Client | Admin Panel{% endblock %}
+
+{% block content %}
+  <div class="row justify-content-center">
+    <div class="col-12 col-lg-7">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+          <p class="text-muted mb-1">Admin panel</p>
+          <h1 class="h3 mb-0">{{ "Edit client" if client else "Create client" }}</h1>
+        </div>
+        <a class="btn btn-outline-secondary" href="{{ url_for('admin.clients') }}">Back</a>
+      </div>
+
+      <div class="card border-0 shadow-sm">
+        <div class="card-body p-4">
+          <form method="post">
+            <div class="mb-3">
+              <label class="form-label" for="company_name">Company Name</label>
+              <input class="form-control" id="company_name" name="company_name" value="{{ client.company_name if client else '' }}" required>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label" for="email">Email</label>
+              <input class="form-control" id="email" name="email" type="email" value="{{ client.email if client else '' }}" required>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label" for="sharepoint_folder_path">SharePoint Document Link</label>
+              <input class="form-control" id="sharepoint_folder_path" name="sharepoint_folder_path" type="url" value="{{ client.sharepoint_folder_path if client else '' }}" placeholder="https://...sharepoint.com/...">
+              <div class="form-text">Use a Specific people or People with existing access SharePoint link for this client.</div>
+            </div>
+
+            <div class="mb-4">
+              <label class="form-label" for="password">Password</label>
+              <input class="form-control" id="password" name="password" type="password" {% if not client %}required{% endif %}>
+              {% if client %}
+                <div class="form-text">Leave blank to keep the current password.</div>
+              {% endif %}
+            </div>
+
+            <button class="btn btn-primary" type="submit">{{ "Update client" if client else "Create client" }}</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

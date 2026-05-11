@@ -1,0 +1,254 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard | Client Portal{% endblock %}
+
+{% block styles %}
+  <style>
+    .dashboard-shell {
+      min-height: calc(100vh - 57px);
+    }
+
+    .sidebar {
+      min-height: calc(100vh - 57px);
+    }
+
+    .sidebar .nav-link {
+      color: #495057;
+      border-radius: .5rem;
+      font-weight: 500;
+    }
+
+    .sidebar .nav-link.active,
+    .sidebar .nav-link:hover {
+      color: #0d6efd;
+      background: #eaf2ff;
+    }
+
+    .kpi-card {
+      border: 0;
+      border-left: .25rem solid transparent;
+      border-radius: .75rem;
+      box-shadow: 0 .5rem 1.25rem rgba(15, 23, 42, .07);
+    }
+
+    .kpi-sales {
+      border-left-color: #0d6efd;
+    }
+
+    .kpi-purchase {
+      border-left-color: #6f42c1;
+    }
+
+    .kpi-profit {
+      border-left-color: #198754;
+    }
+
+    .kpi-debtors {
+      border-left-color: #fd7e14;
+    }
+  </style>
+{% endblock %}
+
+{% block main_class %}container-fluid p-0{% endblock %}
+
+{% block content %}
+  <div class="dashboard-shell row g-0">
+    <aside class="sidebar col-12 col-lg-2 bg-white border-end p-3">
+      <div class="d-flex flex-lg-column gap-2">
+        <a class="nav-link px-3 py-2 {% if request.endpoint == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}">Dashboard</a>
+        <a class="nav-link px-3 py-2" href="{{ url_for('sales_details', month=selected_month, financial_year=selected_financial_year) }}">Sales Invoices</a>
+        <a class="nav-link px-3 py-2" href="{{ url_for('sales_analysis', month=selected_month) }}">Sales Analysis</a>
+        <a class="nav-link px-3 py-2 {% if request.endpoint == 'documents' %}active{% endif %}" href="{{ url_for('documents') }}">Documents</a>
+        <a class="nav-link px-3 py-2" href="{{ url_for('logout') }}">Logout</a>
+      </div>
+    </aside>
+
+    <section class="col-12 col-lg-10 p-4 p-xl-5">
+      <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+        <div>
+          <p class="text-muted mb-1">Client dashboard</p>
+          <h1 class="h3 mb-0">{{ current_user.company_name }}</h1>
+        </div>
+
+        <div class="d-flex flex-wrap align-items-center gap-2">
+          <label class="form-label mb-0 fw-semibold" for="financialYearFilter">Financial Year</label>
+          <select class="form-select" id="financialYearFilter" style="min-width: 140px;">
+            {% for year in financial_years %}
+              <option value="{{ year }}" {% if year == selected_financial_year %}selected{% endif %}>{{ year }}</option>
+            {% endfor %}
+          </select>
+          <label class="form-label mb-0 fw-semibold" for="monthFilter">Month</label>
+          <select class="form-select" id="monthFilter" style="min-width: 150px;">
+            {% for month in months %}
+              <option value="{{ month }}" {% if month == selected_month %}selected{% endif %}>{{ month }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div class="row g-3 mb-4">
+        <div class="col-12 col-sm-6 col-xl-3">
+          <div class="card kpi-card kpi-sales h-100">
+            <div class="card-body">
+              <p class="text-muted mb-1">Monthly Sales</p>
+              <h2 class="h4 mb-0" id="monthlySales">-</h2>
+              <div class="d-flex flex-column gap-1 mt-2">
+                <a class="small text-primary text-decoration-none" id="salesDetailsLink" href="{{ url_for('sales_details', month=selected_month) }}">View sales invoices</a>
+                <a class="small text-secondary text-decoration-none" id="salesAnalysisLink" href="{{ url_for('sales_analysis', month=selected_month) }}">View sales analysis</a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-xl-3">
+          <div class="card kpi-card kpi-purchase h-100">
+            <div class="card-body">
+              <p class="text-muted mb-1">Monthly Purchase</p>
+              <h2 class="h4 mb-0" id="monthlyPurchase">-</h2>
+              <div class="d-flex flex-column gap-1 mt-2">
+                <a class="small text-primary text-decoration-none" id="purchaseDetailsLink" href="{{ url_for('purchase_details', month=selected_month, financial_year=selected_financial_year) }}">View purchase invoices</a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-xl-3">
+          <div class="card kpi-card kpi-profit h-100">
+            <div class="card-body">
+              <p class="text-muted mb-1">Profit/Loss</p>
+              <h2 class="h4 mb-0" id="profitLoss">-</h2>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-xl-3">
+          <div class="card kpi-card kpi-debtors h-100">
+            <div class="card-body">
+              <p class="text-muted mb-1">Total Debtors</p>
+              <h2 class="h4 mb-0" id="totalDebtors">-</h2>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white d-flex flex-column flex-md-row justify-content-between gap-2">
+          <div>
+            <h2 class="h5 mb-1">Sundry Debtors</h2>
+            <p class="text-muted mb-0" id="debtorMonth">{{ selected_month }}</p>
+          </div>
+          <span class="badge text-bg-light align-self-md-center" id="debtorCount">0 parties</span>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th scope="col">Party Name</th>
+                <th scope="col" class="text-end">Pending Amount</th>
+              </tr>
+            </thead>
+            <tbody id="debtorsTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+  <script>
+    const initialDashboardData = {{ dashboard_data | tojson }};
+    const dashboardDataUrl = "{{ url_for('dashboard_data') }}";
+
+    const currency = new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
+      maximumFractionDigits: 0
+    });
+
+    const monthlySales = document.getElementById("monthlySales");
+    const monthlyPurchase = document.getElementById("monthlyPurchase");
+    const profitLoss = document.getElementById("profitLoss");
+    const totalDebtors = document.getElementById("totalDebtors");
+    const debtorMonth = document.getElementById("debtorMonth");
+    const debtorCount = document.getElementById("debtorCount");
+    const debtorsTableBody = document.getElementById("debtorsTableBody");
+    const monthFilter = document.getElementById("monthFilter");
+    const financialYearFilter = document.getElementById("financialYearFilter");
+    const salesDetailsLink = document.getElementById("salesDetailsLink");
+    const salesAnalysisLink = document.getElementById("salesAnalysisLink");
+    const purchaseDetailsLink = document.getElementById("purchaseDetailsLink");
+
+    function selectedFinancialYear() {
+      return financialYearFilter ? financialYearFilter.value : "{{ selected_financial_year }}";
+    }
+
+    function renderDashboard(data) {
+      monthlySales.textContent = currency.format(data.total_sales);
+      monthlyPurchase.textContent = currency.format(data.total_purchase);
+      profitLoss.textContent = currency.format(data.profit_loss);
+      profitLoss.classList.toggle("text-danger", data.profit_loss < 0);
+      profitLoss.classList.toggle("text-success", data.profit_loss >= 0);
+      totalDebtors.textContent = currency.format(data.total_debtors);
+      debtorMonth.textContent = data.month;
+      debtorCount.textContent = `${data.debtors.length} parties`;
+      salesDetailsLink.href = `{{ url_for('sales_details') }}?month=${encodeURIComponent(data.month)}&financial_year=${encodeURIComponent(selectedFinancialYear())}`;
+      salesAnalysisLink.href = `{{ url_for('sales_analysis') }}?month=${encodeURIComponent(data.month)}&financial_year=${encodeURIComponent(selectedFinancialYear())}`;
+      purchaseDetailsLink.href = `{{ url_for('purchase_details') }}?month=${encodeURIComponent(data.month)}&financial_year=${encodeURIComponent(selectedFinancialYear())}`;
+
+      if (data.debtors.length === 0) {
+        debtorsTableBody.innerHTML = `
+          <tr>
+            <td class="text-muted text-center py-4" colspan="2">No debtors found for ${data.month}.</td>
+          </tr>
+        `;
+        return;
+      }
+
+      debtorsTableBody.innerHTML = data.debtors.map((debtor) => `
+        <tr>
+          <td>${debtor.party_name}</td>
+          <td class="text-end fw-semibold">${currency.format(debtor.pending_amount)}</td>
+        </tr>
+      `).join("");
+    }
+
+    async function loadDashboard(month) {
+      monthFilter.disabled = true;
+      financialYearFilter.disabled = true;
+
+      try {
+        const response = await fetch(`${dashboardDataUrl}?month=${encodeURIComponent(month)}&financial_year=${encodeURIComponent(selectedFinancialYear())}`);
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || "Unable to load dashboard data.");
+        }
+
+        renderDashboard(data);
+        const url = new URL(window.location);
+        url.searchParams.set("month", month);
+        url.searchParams.set("financial_year", selectedFinancialYear());
+        window.history.replaceState({}, "", url);
+      } catch (error) {
+        debtorsTableBody.innerHTML = `
+          <tr>
+            <td class="text-danger text-center py-4" colspan="2">${error.message}</td>
+          </tr>
+        `;
+      } finally {
+        monthFilter.disabled = false;
+        financialYearFilter.disabled = false;
+      }
+    }
+
+    monthFilter.addEventListener("change", () => {
+      loadDashboard(monthFilter.value);
+    });
+    financialYearFilter.addEventListener("change", () => {
+      loadDashboard(monthFilter.value);
+    });
+
+    renderDashboard(initialDashboardData);
+  </script>
+{% endblock %}

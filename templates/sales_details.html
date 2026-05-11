@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title if page_title is defined else "Sales Invoices" }} | Client Portal{% endblock %}
+
+{% block content %}
+  <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+    <div>
+      <p class="text-muted mb-1">{{ page_title if page_title is defined else "Sales invoices" }}</p>
+      <h1 class="h3 mb-0">{{ client.company_name if client is defined else current_user.company_name }}</h1>
+      <p class="text-muted mb-0">{{ selected_financial_year if selected_financial_year is defined else "" }}{% if selected_financial_year is defined %} | {% endif %}{{ selected_month }}</p>
+    </div>
+
+    <div class="d-flex flex-column flex-sm-row gap-2">
+      <form method="get" class="d-flex align-items-center gap-2">
+        {% if financial_years is defined %}
+          <label class="form-label mb-0 fw-semibold" for="financial_year">FY</label>
+          <select class="form-select" id="financial_year" name="financial_year" onchange="this.form.submit()">
+            {% for year in financial_years %}
+              <option value="{{ year }}" {% if year == selected_financial_year %}selected{% endif %}>{{ year }}</option>
+            {% endfor %}
+          </select>
+        {% endif %}
+        <label class="form-label mb-0 fw-semibold" for="month">Month</label>
+        <select class="form-select" id="month" name="month" onchange="this.form.submit()">
+          {% for month in months %}
+            <option value="{{ month }}" {% if month == selected_month %}selected{% endif %}>{{ month }}</option>
+          {% endfor %}
+        </select>
+      </form>
+      {% if admin_view %}
+        <a class="btn btn-outline-secondary" href="{{ url_for('admin.records', type='sales', client_id=client.id) }}">Back to records</a>
+      {% else %}
+        <a class="btn btn-outline-secondary" href="{{ url_for('dashboard', month=selected_month, financial_year=selected_financial_year if selected_financial_year is defined else '') }}">Back to dashboard</a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center gap-3">
+      <div>
+        <h2 class="h5 mb-1">{{ list_title if list_title is defined else "Sales invoice list" }}</h2>
+        <p class="text-muted mb-0">{{ selected_financial_year if selected_financial_year is defined else "" }}{% if selected_financial_year is defined %} | {% endif %}{{ selected_month }}</p>
+      </div>
+      <div class="d-flex flex-wrap justify-content-end gap-2">
+        {% if detail_type is not defined or detail_type == "sales" %}
+          <a class="btn btn-outline-success btn-sm" href="{{ url_for('export_sales_excel', month=selected_month, financial_year=selected_financial_year if selected_financial_year is defined else '') }}">Export Excel</a>
+          <a class="btn btn-outline-primary btn-sm" href="{{ url_for('export_sales_pdf', month=selected_month, financial_year=selected_financial_year if selected_financial_year is defined else '') }}">Export PDF</a>
+        {% elif detail_type == "purchase" %}
+          <a class="btn btn-outline-success btn-sm" href="{{ url_for('export_purchase_excel', month=selected_month, financial_year=selected_financial_year if selected_financial_year is defined else '') }}">Export Excel</a>
+          <a class="btn btn-outline-primary btn-sm" href="{{ url_for('export_purchase_pdf', month=selected_month, financial_year=selected_financial_year if selected_financial_year is defined else '') }}">Export PDF</a>
+        {% endif %}
+        {% if not admin_view %}
+          <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('sales_analysis', month=selected_month, financial_year=selected_financial_year if selected_financial_year is defined else '') }}">View Analysis</a>
+        {% endif %}
+        {% if admin_view %}
+          {% if period_locked %}
+            <form method="post" action="{{ url_for('admin.unlock_sales_period', client_id=client.id) }}" onsubmit="return confirm('Unlock this sales period?');">
+              <input type="hidden" name="month" value="{{ selected_month }}">
+              <button class="btn btn-outline-warning btn-sm" type="submit">Unlock Period</button>
+            </form>
+          {% else %}
+            <form method="post" action="{{ url_for('admin.lock_sales_period', client_id=client.id) }}" onsubmit="return confirm('Lock this sales period? Imports and deletes will be blocked.');">
+              <input type="hidden" name="month" value="{{ selected_month }}">
+              <button class="btn btn-outline-secondary btn-sm" type="submit">Lock Period</button>
+            </form>
+          {% endif %}
+        {% endif %}
+        <span class="badge text-bg-light align-self-center">{{ records | length }} invoices</span>
+      </div>
+    </div>
+
+    {% if admin_view %}
+      {% if period_locked %}
+        <div class="alert alert-warning rounded-0 mb-0">
+          {{ selected_month }} is locked. Imports and deletes are blocked until the period is unlocked.
+        </div>
+      {% endif %}
+      <form method="post" action="{{ url_for('admin.bulk_delete_sales_invoices', client_id=client.id) }}" onsubmit="return confirmBulkDelete(event);">
+        <input type="hidden" name="month" value="{{ selected_month }}">
+    {% endif %}
+
+      {% if admin_view %}
+        <div class="border-bottom bg-white px-3 py-2 d-flex justify-content-between align-items-center gap-2">
+          <span class="text-muted small">Select rows to delete multiple invoices at once.</span>
+          <button class="btn btn-outline-danger btn-sm" type="submit" {% if period_locked %}disabled{% endif %}>Delete Selected</button>
+        </div>
+      {% endif %}
+
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              {% if admin_view %}
+                <th style="width: 44px;">
+                  <input class="form-check-input" id="selectAllInvoices" type="checkbox" aria-label="Select all invoices">
+                </th>
+              {% endif %}
+              {% for column in columns %}
+                <th>{{ column }}</th>
+              {% endfor %}
+              {% if admin_view %}
+                <td class="text-end">Action</td>
+              {% endif %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for record in records %}
+              <tr>
+                {% if admin_view %}
+                  <td>
+                    <input class="form-check-input invoice-checkbox" name="invoice_ids" type="checkbox" value="{{ record.get('_invoice_id') }}" aria-label="Select invoice {{ record.get('Invoice No.', '') }}">
+                  </td>
+                {% endif %}
+                {% for column in columns %}
+                  <td>{{ record.get(column, "") }}</td>
+                {% endfor %}
+                {% if admin_view %}
+                  <td class="text-end">
+                    <button
+                      class="btn btn-outline-danger btn-sm"
+                      type="submit"
+                    formaction="{{ url_for('admin.delete_sales_invoice', client_id=client.id, invoice_id=record.get('_invoice_id')) }}"
+                    onclick="return confirm('Confirm delete before deleting this invoice record?');"
+                    {% if period_locked %}disabled{% endif %}
+                  >
+                      Delete
+                    </button>
+                  </td>
+                {% endif %}
+              </tr>
+            {% else %}
+              <tr>
+                <td class="text-muted text-center py-4" colspan="{{ (columns | length) + (2 if admin_view else 0) }}">
+                  {{ empty_message if empty_message is defined else "No sales invoice details found" }} for {{ selected_month }}.
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% if admin_view %}
+      </form>
+    {% endif %}
+  </div>
+{% endblock %}
+
+{% block scripts %}
+  {% if admin_view %}
+    <script>
+      const selectAllInvoices = document.getElementById("selectAllInvoices");
+      const invoiceCheckboxes = document.querySelectorAll(".invoice-checkbox");
+
+      if (selectAllInvoices) {
+        selectAllInvoices.addEventListener("change", () => {
+          invoiceCheckboxes.forEach((checkbox) => {
+            checkbox.checked = selectAllInvoices.checked;
+          });
+        });
+      }
+
+      function confirmBulkDelete(event) {
+        if (event.submitter && event.submitter.formAction !== event.currentTarget.action) {
+          return true;
+        }
+
+        return confirm("Confirm delete before deleting selected invoice records?");
+      }
+    </script>
+  {% endif %}
+{% endblock %}

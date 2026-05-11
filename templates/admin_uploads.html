@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+
+{% block title %}Excel Uploads | Client Portal{% endblock %}
+
+{% block content %}
+  <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+    <div>
+      <p class="text-muted mb-1">Admin</p>
+      <h1 class="h3 mb-0">Excel uploads</h1>
+    </div>
+    <div class="d-flex gap-2">
+      <a class="btn btn-outline-secondary" href="{{ url_for('admin.dashboard') }}">Admin home</a>
+      <a class="btn btn-outline-primary" href="{{ url_for('admin.records') }}">View records</a>
+      <a class="btn btn-outline-primary" href="{{ url_for('admin.tally_sync_history') }}">Tally history</a>
+      <a class="btn btn-outline-warning" href="{{ url_for('admin.tally_pending_corrections') }}">Pending corrections</a>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    {% for upload_type, schema in upload_schemas.items() %}
+      <div class="col-12 col-lg-6">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-body p-4">
+            <h2 class="h5 mb-2">{{ schema.label }}</h2>
+            <p class="text-muted small mb-4">
+              Required columns: {{ schema.columns | reject("equalto", "client_id") | join(", ") }}
+              {% if upload_type == "sales" %}
+                <br>Tally Sales reports are also supported directly.
+              {% elif upload_type == "purchase" %}
+                <br>Tally Purchase reports are also supported directly.
+              {% endif %}
+            </p>
+
+            <form method="post" enctype="multipart/form-data">
+              <input type="hidden" name="upload_type" value="{{ upload_type }}">
+              <div class="mb-3">
+                <label class="form-label" for="{{ upload_type }}Client">Client</label>
+                <select class="form-select" id="{{ upload_type }}Client" name="client_id" required>
+                  <option value="">Select client</option>
+                  {% for client in clients %}
+                    <option value="{{ client.id }}">{{ client.company_name }} - {{ client.email }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="mb-3">
+                <label class="form-label" for="{{ upload_type }}File">Excel file</label>
+                <input class="form-control" id="{{ upload_type }}File" name="excel_file" type="file" accept=".xlsx,.xls" required>
+              </div>
+              <button class="btn btn-primary" type="submit">Upload {{ schema.label }}</button>
+            </form>
+
+            {% if upload_type == "sales" %}
+              <hr class="my-4">
+              <h3 class="h6 mb-3">Fetch sales from Tally</h3>
+              <form class="mb-3" method="post" action="{{ url_for('excel_upload.test_tally') }}">
+                <label class="form-label" for="tallyTestUrl">Tally URL</label>
+                <div class="input-group">
+                  <input class="form-control" id="tallyTestUrl" name="tally_url" type="url" value="{{ default_tally_url }}" required>
+                  <button class="btn btn-outline-secondary" type="submit">Test Connection</button>
+                </div>
+              </form>
+
+              <form method="post" action="{{ url_for('excel_upload.preview_tally_sales') }}">
+                <div class="mb-3">
+                  <label class="form-label" for="tallySalesClient">Client</label>
+                  <select class="form-select" id="tallySalesClient" name="client_id" required>
+                    <option value="">Select client</option>
+                    {% for client in clients %}
+                      <option value="{{ client.id }}">{{ client.company_name }} - {{ client.email }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div class="row g-2">
+                  <div class="col-12 col-sm-6">
+                    <label class="form-label" for="tallyFromDate">From date</label>
+                    <input class="form-control" id="tallyFromDate" name="from_date" type="date" required>
+                  </div>
+                  <div class="col-12 col-sm-6">
+                    <label class="form-label" for="tallyToDate">To date</label>
+                    <input class="form-control" id="tallyToDate" name="to_date" type="date" required>
+                  </div>
+                </div>
+                <div class="mt-3">
+                  <label class="form-label" for="tallyUrl">Tally URL</label>
+                  <input class="form-control" id="tallyUrl" name="tally_url" type="url" value="{{ default_tally_url }}" required>
+                </div>
+                <button class="btn btn-outline-primary mt-3" type="submit">Fetch from Tally</button>
+              </form>
+            {% endif %}
+            {% if upload_type == "purchase" %}
+              <hr class="my-4">
+              <h3 class="h6 mb-3">Fetch purchase from Tally</h3>
+              <form method="post" action="{{ url_for('excel_upload.preview_tally_purchase') }}">
+                <div class="mb-3">
+                  <label class="form-label" for="tallyPurchaseClient">Client</label>
+                  <select class="form-select" id="tallyPurchaseClient" name="client_id" required>
+                    <option value="">Select client</option>
+                    {% for client in clients %}
+                      <option value="{{ client.id }}">{{ client.company_name }} - {{ client.email }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div class="row g-2">
+                  <div class="col-12 col-sm-6">
+                    <label class="form-label" for="tallyPurchaseFromDate">From date</label>
+                    <input class="form-control" id="tallyPurchaseFromDate" name="from_date" type="date" required>
+                  </div>
+                  <div class="col-12 col-sm-6">
+                    <label class="form-label" for="tallyPurchaseToDate">To date</label>
+                    <input class="form-control" id="tallyPurchaseToDate" name="to_date" type="date" required>
+                  </div>
+                </div>
+                <div class="mt-3">
+                  <label class="form-label" for="tallyPurchaseUrl">Tally URL</label>
+                  <input class="form-control" id="tallyPurchaseUrl" name="tally_url" type="url" value="{{ default_tally_url }}" required>
+                </div>
+                <button class="btn btn-outline-primary mt-3" type="submit">Fetch from Tally</button>
+              </form>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% endblock %}

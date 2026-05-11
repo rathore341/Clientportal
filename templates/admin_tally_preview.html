@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title if page_title is defined else "Tally Sales Preview" }} | Client Portal{% endblock %}
+
+{% block content %}
+  <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+    <div>
+      <p class="text-muted mb-1">Admin</p>
+      <h1 class="h3 mb-0">{{ page_title if page_title is defined else "Tally sales preview" }}</h1>
+      <p class="text-muted mb-0">{{ client.company_name }} | {{ from_date }} to {{ to_date }}</p>
+    </div>
+    <a class="btn btn-outline-secondary" href="{{ url_for('excel_upload.upload_excel') }}">Back to uploads</a>
+  </div>
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center gap-3">
+      <div>
+        <h2 class="h5 mb-1">{{ header_title if header_title is defined else (month ~ " sales invoices") }}</h2>
+        <p class="text-muted mb-0">{{ tally_url }}</p>
+      </div>
+      <div class="d-flex flex-wrap justify-content-end gap-2">
+        {% if import_blocked %}
+          <span class="badge text-bg-danger">Import blocked</span>
+        {% elif invalid_count %}
+          <span class="badge text-bg-warning">Partial import ready</span>
+        {% else %}
+          <span class="badge text-bg-success">Ready to import</span>
+        {% endif %}
+        <span class="badge text-bg-light">{{ rows | length }} invoices</span>
+        <span class="badge text-bg-success">{{ valid_count }} valid</span>
+        {% if invalid_count %}
+          <span class="badge text-bg-warning">{{ invalid_count }} for correction</span>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if period_locked or company_match_error %}
+      <div class="alert alert-danger rounded-0 mb-0">
+        Import is blocked because this batch has a company or period-level issue.
+        {% if company_match_error %}
+          <br>{{ company_match_error }}
+        {% endif %}
+        {% if period_locked %}
+          <br>{{ month }} is locked for this client.
+        {% endif %}
+      </div>
+    {% elif invalid_count %}
+      <div class="alert alert-warning rounded-0 mb-0">
+        Valid rows can be imported now. Rows marked as Error will be saved in Pending corrections with their mismatch details.
+      </div>
+    {% elif tally_company_name %}
+      <div class="alert alert-success rounded-0 mb-0">
+        Tally company matched: {{ tally_company_name }}
+      </div>
+    {% endif %}
+
+    <div class="border-bottom bg-white px-3 py-2 d-flex flex-wrap gap-2 align-items-center">
+      <span class="text-muted small me-1">Filter preview</span>
+      <button class="btn btn-outline-secondary btn-sm preview-filter active" type="button" data-filter="all">All</button>
+      <button class="btn btn-outline-success btn-sm preview-filter" type="button" data-filter="New">New</button>
+      <button class="btn btn-outline-warning btn-sm preview-filter" type="button" data-filter="Existing">Existing</button>
+      <button class="btn btn-outline-danger btn-sm preview-filter" type="button" data-filter="Error">Errors</button>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            {% for column in columns %}
+              <th>{{ column }}</th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in rows %}
+            <tr
+              class="{% if row.get('Status') == 'Error' %}table-danger{% elif row.get('Status') == 'Existing' %}table-warning{% endif %}"
+              data-status="{{ row.get('Status') }}"
+            >
+              {% for column in columns %}
+                <td>{{ row.get(column, "") }}</td>
+              {% endfor %}
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card-footer bg-white d-flex flex-column flex-sm-row justify-content-end gap-2">
+      <a class="btn btn-outline-secondary" href="{{ url_for('excel_upload.upload_excel') }}">Cancel</a>
+      <form method="post" action="{{ url_for(import_endpoint if import_endpoint is defined else 'excel_upload.import_tally_sales') }}" onsubmit="return confirm('Import these Tally rows?');">
+        <input type="hidden" name="client_id" value="{{ client.id }}">
+        <input type="hidden" name="month" value="{{ month }}">
+        <input type="hidden" name="financial_year" value="{{ financial_year if financial_year is defined else '' }}">
+        <input type="hidden" name="from_date" value="{{ from_date }}">
+        <input type="hidden" name="to_date" value="{{ to_date }}">
+        <input type="hidden" name="tally_company_name" value="{{ tally_company_name }}">
+        <input type="hidden" name="invoice_rows" value="{{ invoice_rows_json | e }}">
+        <div class="d-flex flex-column flex-sm-row gap-2 align-items-sm-center mb-2 mb-sm-0">
+          <div class="form-check">
+            <input class="form-check-input" id="importNewOnly" name="import_mode" type="radio" value="new_only" checked>
+            <label class="form-check-label" for="importNewOnly">Sync only new invoices</label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" id="importUpdateExisting" name="import_mode" type="radio" value="update_existing">
+            <label class="form-check-label" for="importUpdateExisting">Update existing invoices</label>
+          </div>
+        </div>
+        <button class="btn btn-primary" type="submit" {% if import_blocked %}disabled{% endif %}>Import Valid {{ record_label if record_label is defined else "Rows" }}</button>
+      </form>
+    </div>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+  <script>
+    const filterButtons = document.querySelectorAll(".preview-filter");
+    const previewRows = document.querySelectorAll("[data-status]");
+
+    filterButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        const filter = button.dataset.filter;
+        filterButtons.forEach((item) => item.classList.remove("active"));
+        button.classList.add("active");
+
+        previewRows.forEach((row) => {
+          row.hidden = filter !== "all" && row.dataset.status !== filter;
+        });
+      });
+    });
+  </script>
+{% endblock %}
