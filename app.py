@@ -661,6 +661,16 @@ def create_app():
         "DATABASE_URL",
         f"sqlite:///{default_database_path.as_posix()}",
     )
+    database_uri = app.config["SQLALCHEMY_DATABASE_URI"]
+    if database_uri.startswith("sqlite:///") and database_uri != "sqlite:///:memory:":
+        sqlite_path_value = database_uri.removeprefix("sqlite:///")
+        if database_uri.startswith("sqlite:////"):
+            sqlite_path_value = f"/{sqlite_path_value.lstrip('/')}"
+        sqlite_path = Path(sqlite_path_value)
+        if not sqlite_path.is_absolute():
+            sqlite_path = Path(app.root_path).joinpath(sqlite_path)
+        sqlite_path.parent.mkdir(parents=True, exist_ok=True)
+        app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{sqlite_path.as_posix()}"
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
         "connect_args": {"timeout": 30},

@@ -19,6 +19,7 @@ instance/
 *.sqlite3-*
 *.db
 db_backups/
+data/
 flask_*.log
 *.log
 

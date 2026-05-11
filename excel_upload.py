@@ -56,8 +56,11 @@ def get_upload_db_path():
     configured_path = current_app.config.get("UPLOAD_SQLITE_DB", "uploads.sqlite3")
     configured_path = Path(configured_path)
     if configured_path.is_absolute():
-        return configured_path
-    return Path(current_app.root_path).joinpath(configured_path)
+        db_path = configured_path
+    else:
+        db_path = Path(current_app.root_path).joinpath(configured_path)
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    return db_path
 
 
 def connect_upload_database():
